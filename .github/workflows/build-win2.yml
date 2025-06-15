@@ -21,7 +21,7 @@ jobs:
         pip install pyinstaller
 
     - name: Build EXE
-      run: pyinstaller --onefile UnprotectExcel v1.py
+      run: pyinstaller --onefile "nprotectExcel v1.py"
 
     - name: Upload artifact
       uses: actions/upload-artifact@v4
