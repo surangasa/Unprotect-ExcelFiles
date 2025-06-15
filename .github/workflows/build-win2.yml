@@ -27,4 +27,4 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: unlock_excel_exe
-        path: dist/unlock_excel.exe
+        path: "dist/UnprotectExcel v1.exe"
