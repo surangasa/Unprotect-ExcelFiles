@@ -83,6 +83,23 @@ def save_workbook(wb: Workbook, original: Path) -> Path:
     return new_path
 
 
+def strip_protection_tags(xlsx_path: Path) -> None:
+    """Remove workbookProtection and sheetProtection elements from the file."""
+    temp_zip = xlsx_path.with_suffix(".tmp")
+    with zipfile.ZipFile(xlsx_path, "r") as zin, zipfile.ZipFile(temp_zip, "w") as zout:
+        for item in zin.infolist():
+            data = zin.read(item.filename)
+            if item.filename.endswith(".xml"):
+                root = ET.fromstring(data)
+                for child in list(root):
+                    tag = child.tag.split('}')[-1]
+                    if tag in {"workbookProtection", "sheetProtection"}:
+                        root.remove(child)
+                data = ET.tostring(root)
+            zout.writestr(item, data)
+    shutil.move(temp_zip, xlsx_path)
+
+
 def process_xlsx(path: Path) -> Path:
     """Process xlsx, xlsm, xltx, xltm files."""
     with tempfile.TemporaryDirectory() as tmp:
@@ -99,6 +116,7 @@ def process_xlsx(path: Path) -> Path:
                 unlock_vba(decrypted, tmp_dir)
             bar.update(1)
             new_path = save_workbook(wb, path)
+            strip_protection_tags(new_path)
             bar.update(1)
             return new_path
 

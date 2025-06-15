@@ -36,4 +36,6 @@ pytest -q
 ## Building executables
 
 A GitHub Actions workflow builds a standalone Windows EXE and macOS app
-using PyInstaller. See `.github/workflows/build.yml` for details.
+using PyInstaller. Built binaries are pushed to the `gh-pages` branch so they
+can be downloaded from GitHub Pages. See `.github/workflows/build.yml` for
+details.

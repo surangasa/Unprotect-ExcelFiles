@@ -8,6 +8,11 @@ on:
       - '.github/workflows/build.yml'
   workflow_dispatch:
 
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
 jobs:
   windows:
     runs-on: windows-latest
@@ -46,4 +51,31 @@ jobs:
         with:
           name: macos-app
           path: dist/unlock_excel.app
+
+  publish:
+    needs: [windows, macos]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: windows-exe
+          path: site
+      - uses: actions/download-artifact@v4
+        with:
+          name: macos-app
+          path: site
+      - uses: actions/configure-pages@v3
+      - uses: actions/upload-pages-artifact@v2
+        with:
+          path: site
+
+  deploy:
+    needs: publish
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@v2
 
