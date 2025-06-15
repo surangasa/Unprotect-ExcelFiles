@@ -11,7 +11,7 @@ def test_unlock_workbook():
     wb = openpyxl.Workbook()
     wb.security.lockStructure = True
     unlock_workbook(wb)
-    assert not wb.security.lockStructure
+    assert wb.security is None
 
 
 def test_unlock_worksheets():
@@ -21,4 +21,4 @@ def test_unlock_worksheets():
     ws.sheet_state = 'hidden'
     unlock_worksheets(wb)
     assert ws.sheet_state == 'visible'
-    assert not ws.protection.sheet
+    assert ws.protection is None

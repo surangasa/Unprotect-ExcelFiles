@@ -23,6 +23,7 @@ from pathlib import Path
 from typing import Optional
 
 import msoffcrypto
+from msoffcrypto.exceptions import FileFormatError
 import openpyxl
 from openpyxl.workbook.workbook import Workbook
 from tqdm import tqdm
@@ -32,7 +33,10 @@ def decrypt_file(input_path: Path, temp_dir: Path) -> Path:
     """Remove file-open password using msoffcrypto."""
     output = temp_dir / input_path.name
     with open(input_path, "rb") as f:
-        office_file = msoffcrypto.OfficeFile(f)
+        try:
+            office_file = msoffcrypto.OfficeFile(f)
+        except FileFormatError:
+            return input_path
         if not office_file.is_encrypted():
             return input_path
         office_file.load_key(password="")
@@ -42,17 +46,14 @@ def decrypt_file(input_path: Path, temp_dir: Path) -> Path:
 
 
 def unlock_workbook(workbook: Workbook) -> None:
-    """Remove workbook structure protection."""
-    if workbook.security:
-        workbook.security.lockStructure = False
-        workbook.security.lockWindows = False
-        workbook.security.workbookPassword = ""
+    """Remove workbook structure protection completely."""
+    workbook.security = None
 
 
 def unlock_worksheets(workbook: Workbook) -> None:
-    """Remove worksheet protection and make sheets visible."""
+    """Remove worksheet protection and unhide sheets."""
     for sheet in workbook.worksheets:
-        sheet.protection = openpyxl.worksheet.protection.SheetProtection()
+        sheet.protection = None
         sheet.sheet_state = "visible"
 
 
