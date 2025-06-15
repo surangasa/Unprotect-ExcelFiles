@@ -4,10 +4,12 @@ Install dependencies:
     pip install -r requirements.txt
 
 Usage:
-    python unlock_excel.py /path/to/file.xlsx
+    python UnprotectExcel_v1.py /path/to/spreadsheet
+
+Supported formats: .xlsx, .xlsm, .xltx, .xltm, .xls, .xlsb, .ods
 
 Example output:
-    $ python unlock_excel.py sample.xlsx
+    $ python UnprotectExcel_v1.py sample.xlsx
     Processing: 100%|##########| 5/5 [00:00<00:00, ?step/s]
     File unlocked: sample_unlocked.xlsx
 """
@@ -21,16 +23,18 @@ import tempfile
 import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import Optional
+import subprocess
 
 import msoffcrypto
 from msoffcrypto.exceptions import FileFormatError
 import openpyxl
 from openpyxl.workbook.workbook import Workbook
 from tqdm import tqdm
+import xlwings as xw
 
 
 def decrypt_file(input_path: Path, temp_dir: Path) -> Path:
-    """Remove file-open password using msoffcrypto."""
+    """Remove file-open password using msoffcrypto, if present."""
     output = temp_dir / input_path.name
     with open(input_path, "rb") as f:
         try:
@@ -40,8 +44,11 @@ def decrypt_file(input_path: Path, temp_dir: Path) -> Path:
         if not office_file.is_encrypted():
             return input_path
         office_file.load_key(password="")
-        with open(output, "wb") as decrypted:
-            office_file.decrypt(decrypted)
+        try:
+            with open(output, "wb") as decrypted:
+                office_file.decrypt(decrypted)
+        except Exception:
+            return input_path
     return output
 
 
@@ -120,6 +127,30 @@ def process_ods(path: Path) -> Path:
             return new_path
 
 
+def process_xls_xlsb(path: Path) -> Path:
+    """Handle legacy and binary Excel formats via xlwings."""
+    with tempfile.TemporaryDirectory() as tmp:
+        app = xw.App(visible=False)
+        try:
+            book = app.books.open(str(path))
+            for sheet in book.sheets:
+                try:
+                    sheet.api.Unprotect(Password="")
+                except Exception:
+                    pass
+                sheet.visible = True
+            try:
+                book.api.Unprotect(Password="")
+            except Exception:
+                pass
+            dest = Path(tmp) / path.name
+            book.save(dest)
+            book.close()
+        finally:
+            app.quit()
+        return process_xlsx(dest)
+
+
 def process_file(path: Path) -> Optional[Path]:
     """Dispatch processing based on file extension."""
     ext = path.suffix.lower()
@@ -128,7 +159,7 @@ def process_file(path: Path) -> Optional[Path]:
     if ext == ".ods":
         return process_ods(path)
     if ext in {".xls", ".xlsb"}:
-        raise NotImplementedError("Binary Excel formats not supported")
+        return process_xls_xlsb(path)
     raise ValueError(f"Unsupported file type: {ext}")
 
 

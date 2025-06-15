@@ -4,7 +4,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import openpyxl
-from unlock_excel import unlock_workbook, unlock_worksheets
+from UnprotectExcel_v1 import unlock_workbook, unlock_worksheets
 
 
 def test_unlock_workbook():
